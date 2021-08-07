@@ -1,0 +1,51 @@
+{
+	"name": "saikourobloxbans",
+	"version": "1.0.0",
+	"description": "Communicating with Roblox and MongoDB to create a ban system",
+	"main": "dist/app.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Brandong04/SaikouRobloxBans.git"
+	},
+	"keywords": [
+		"mongodb",
+		"roblox",
+		"nodejs",
+		"typescript",
+		"bans"
+	],
+	"author": "Brandon",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/Brandong04/SaikouRobloxBans/issues"
+	},
+	"homepage": "https://github.com/Brandong04/SaikouRobloxBans#readme",
+	"devDependencies": {
+		"@types/cors": "^2.8.12",
+		"@types/express": "^4.17.13",
+		"@types/express-rate-limit": "^5.1.3",
+		"@typescript-eslint/eslint-plugin": "^4.29.0",
+		"@typescript-eslint/parser": "^4.29.0",
+		"eslint": "^7.32.0",
+		"eslint-config-airbnb-typescript": "^12.3.1",
+		"eslint-config-node": "^4.1.0",
+		"eslint-config-prettier": "^8.3.0",
+		"eslint-plugin-import": "^2.23.4",
+		"eslint-plugin-node": "^11.1.0",
+		"eslint-plugin-prettier": "^3.4.0",
+		"prettier": "^2.3.2",
+		"typescript": "^4.3.5"
+	},
+	"dependencies": {
+		"chalk": "^4.1.2",
+		"cors": "^2.8.5",
+		"dotenv": "^8.6.0",
+		"express": "^4.17.1",
+		"express-rate-limit": "^5.3.0",
+		"helmet": "^4.6.0",
+		"mongoose": "^5.13.5"
+	}
+}
