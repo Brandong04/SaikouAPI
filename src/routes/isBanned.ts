@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 
-import robloxBans from '../models/ban';
+import permBans from '../models/ban';
+import timeBans from '../models/timeban';
 
 const router: Router = express.Router();
 
@@ -12,13 +13,22 @@ router.get('/users/:userid/banned', async (request, response) => {
 		return response.status(400).json({ errorCode: 1, message: 'Roblox ID contains alphabetic characters.' });
 	}
 
-	const player = await robloxBans.findOne({ RobloxID: Number(userid) }, '-__v -_id');
+	/* Checking if they have a permanent ban */
+	const permbanPlayer = await permBans.findOne({ RobloxID: Number(userid) }, '-__v -_id');
 
-	if (!player) {
-		return response.json({ banned: false });
+	if (permbanPlayer) {
+		return response.json({ banned: true, type: 'permban', player: permbanPlayer });
 	}
 
-	response.json({ banned: true, player });
+	/* Checking if they have a temporary ban */
+	const timebanPlayer = await timeBans.findOne({ RobloxID: Number(userid) }, '-__v -_id');
+
+	if (timebanPlayer) {
+		return response.json({ banned: true, type: 'timeban', player: timebanPlayer });
+	}
+
+	/* If user doesn't have either a temp or perm ban, return false */
+	return response.json({ banned: false });
 });
 
 export = router;

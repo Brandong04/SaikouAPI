@@ -6,12 +6,13 @@ import { config } from 'dotenv';
 import { green } from 'chalk';
 import { connect } from 'mongoose';
 
-import { methodCheck, tokenAuth } from './util/functions';
+import { methodCheck, tokenAuth, expiredTimeban } from './util/functions';
 
 import isBannedRoute from './routes/isBanned';
 import createBanRoute from './routes/createBan';
 import deleteBanRoute from './routes/deleteBan';
 import allBansRoute from './routes/allBans';
+import createTimeban from './routes/createTimeban';
 
 config();
 const app: express.Application = express();
@@ -44,7 +45,7 @@ app.use('/v1', createBanRoute).all('/v1/bans/create-new', (request, response) =>
 app.use('/v1', deleteBanRoute).all('/v1/bans/delete/:RobloxID', (request, response) => methodCheck(request, response, 'DELETE'));
 app.use('/v1', allBansRoute).all('/v1/bans/list-bans', (request, response) => methodCheck(request, response, 'GET'));
 
-// app.use(methodCheck);
+app.use('/v1', createTimeban).all('/v1/timebans/create-new', (request, response) => methodCheck(request, response, 'POST'));
 
 /* HANDLING ENDPOINTS THAT DON'T EXIST */
 app.all('*', (request: express.Request, response: express.Response) => {
@@ -66,3 +67,6 @@ app.listen(80, async (): Promise<void> => {
 		console.error(err);
 	}
 });
+
+/* Checking if timebans expired every 10 seconds */
+setInterval(expiredTimeban, 10000);
