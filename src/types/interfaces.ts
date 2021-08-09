@@ -17,3 +17,8 @@ export interface TimebanTypes extends Document {
 	Duration: number;
 	Date?: Date;
 }
+
+// --- Error Interface ---
+export interface JSONError {
+	status?: number;
+}

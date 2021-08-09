@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { BanTypes } from '../types/schemas';
+import { BanTypes } from '../types/interfaces';
 
 const banSchema: Schema = new Schema({
 	RobloxUsername: { type: String },

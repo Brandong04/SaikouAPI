@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { TimebanTypes } from '../types/schemas';
+import { TimebanTypes } from '../types/interfaces';
 
 const timebanSchema: Schema = new Schema({
 	RobloxUsername: { type: String },

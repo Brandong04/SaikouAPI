@@ -7,6 +7,7 @@ import { green } from 'chalk';
 import { connect } from 'mongoose';
 
 import { methodCheck, tokenAuth, expiredTimeban } from './util/functions';
+import { JSONError } from './types/interfaces';
 
 import isBannedRoute from './routes/isBanned';
 import createBanRoute from './routes/createBan';
@@ -20,9 +21,6 @@ const app: express.Application = express();
 /* ALLOWING API USE ON ALL ORIGINS */
 app.use(cors({ origin: 'https://roblox.com' }));
 
-/* USE BODY PARSER */
-app.use(express.json());
-
 /* EXTRA SECURITY */
 app.use(helmet());
 
@@ -33,11 +31,21 @@ const apiLimiter = rateLimit({
 	// @ts-ignore
 	message: { errorCode: 11, message: 'Too many requests, please try again later.' },
 });
-
 app.use(apiLimiter);
 
 /* USING AUTH MIDDLEWARE */
 app.use(tokenAuth);
+
+/* USE BODY PARSER */
+app.use(express.json());
+
+/* HANDLING INCORRECT JSON BODY */
+app.use((err: JSONError, _request: express.Request, response: express.Response, next: any) => {
+	if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+		return response.status(400).json({ errorCode: 12, message: 'The provided JSON is invalid or incorrectly formatted.' }); // Bad request
+	}
+	next();
+});
 
 /* USING ALL ROUTES */
 app.use('/v1', isBannedRoute).all('/v1/users/:userid/banned', (request, response) => methodCheck(request, response, 'GET'));
