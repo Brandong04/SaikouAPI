@@ -8,12 +8,7 @@ import { connect } from 'mongoose';
 
 import { methodCheck, tokenAuth, expiredTimeban } from './util/functions';
 import { JSONError } from './types/interfaces';
-
-import isBannedRoute from './routes/isBanned';
-import createBanRoute from './routes/createBan';
-import deleteBanRoute from './routes/deleteBan';
-import allBansRoute from './routes/allBans';
-import createTimeban from './routes/createTimeban';
+import { checkBan, addPermBan, addTimeBan, deleteBan, listPermBans } from './routes/ban-endpoints';
 
 config();
 const app: express.Application = express();
@@ -48,12 +43,11 @@ app.use((err: JSONError, _request: express.Request, response: express.Response, 
 });
 
 /* USING ALL ROUTES */
-app.use('/v1', isBannedRoute).all('/v1/users/:userid/banned', (request, response) => methodCheck(request, response, 'GET'));
-app.use('/v1', createBanRoute).all('/v1/bans/create-new', (request, response) => methodCheck(request, response, 'POST'));
-app.use('/v1', deleteBanRoute).all('/v1/bans/delete/:RobloxID', (request, response) => methodCheck(request, response, 'DELETE'));
-app.use('/v1', allBansRoute).all('/v1/bans/list-bans', (request, response) => methodCheck(request, response, 'GET'));
-
-app.use('/v1', createTimeban).all('/v1/timebans/create-new', (request, response) => methodCheck(request, response, 'POST'));
+app.use('/v1', checkBan).all('/v1/users/:userid/banned', (request, response) => methodCheck(request, response, 'GET'));
+app.use('/v1', addPermBan).all('/v1/bans/create-new', (request, response) => methodCheck(request, response, 'POST'));
+app.use('/v1', deleteBan).all('/v1/bans/delete/:RobloxID', (request, response) => methodCheck(request, response, 'DELETE'));
+app.use('/v1', listPermBans).all('/v1/bans/list-bans', (request, response) => methodCheck(request, response, 'GET'));
+app.use('/v1', addTimeBan).all('/v1/timebans/create-new', (request, response) => methodCheck(request, response, 'POST'));
 
 /* HANDLING ENDPOINTS THAT DON'T EXIST */
 app.all('*', (request: express.Request, response: express.Response) => {
