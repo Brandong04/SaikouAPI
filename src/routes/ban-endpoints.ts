@@ -1,4 +1,5 @@
 import express, { Router } from 'express';
+import axios from 'axios';
 
 import PermBan from '../models/ban';
 import TimeBan from '../models/timeban';
@@ -44,6 +45,8 @@ HEADERS: X-API-KEY
 
 export const addPermBan = router.post('/bans/create-new', async (request, response) => {
 	const { RobloxUsername, RobloxID, Moderator, Reason } = request.body;
+	let validMod = false;
+	let moderatorID;
 
 	if (!RobloxUsername || !RobloxID || !Moderator || !Reason) {
 		return response.status(400).json({ errorCode: 6, message: 'Some required fields were missing.' });
@@ -53,24 +56,60 @@ export const addPermBan = router.post('/bans/create-new', async (request, respon
 		return response.status(400).json({ errorCode: 7, message: 'Inputted values lacked the correct data type (string, number).' });
 	}
 
-	if (await PermBan.findOne({ RobloxID })) {
-		return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
-	}
-
-	try {
-		const player = new PermBan({
-			RobloxUsername,
-			RobloxID,
-			Moderator,
-			Reason,
-			Date: Date.now(),
+	/* Checking if they are a Saikou Mod+ */
+	await axios({
+		method: 'post',
+		url: 'https://users.roblox.com/v1/usernames/users',
+		data: {
+			usernames: [Moderator],
+		},
+	})
+		.then((robloxResponse) => {
+			moderatorID = robloxResponse.data.data.map((value: any) => value.id);
+			if (robloxResponse.data.data.length === 0) moderatorID = undefined;
+		})
+		.catch((error) => {
+			console.error(error);
 		});
 
-		await player.save();
-		response.status(200).json({ status: 'ok', message: 'New ban added!' });
-	} catch (err: any) {
-		return response.status(500).json({ error: err.toString() });
+	if (moderatorID) {
+		await axios({
+			method: 'get',
+			url: `https://groups.roblox.com/v2/users/${moderatorID}/groups/roles`,
+		})
+			.then((robloxResponse) => {
+				robloxResponse.data.data.forEach((userGroup: any) => {
+					if (userGroup.group.name === 'Saikou' && userGroup.role.rank >= 40) {
+						validMod = true;
+					}
+				});
+			})
+			.catch((error) => {
+				console.error(error);
+			});
 	}
+
+	if (!moderatorID || validMod !== false) {
+		if (await PermBan.findOne({ RobloxID })) {
+			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
+		}
+
+		try {
+			const player = new PermBan({
+				RobloxUsername,
+				RobloxID,
+				Moderator,
+				Reason,
+				Date: Date.now(),
+			});
+
+			await player.save();
+			return response.status(200).json({ status: 'ok', message: 'New ban added!' });
+		} catch (err: any) {
+			return response.status(500).json({ error: err.toString() });
+		}
+	}
+	return response.status(403).json({ errorCode: 13, message: "The provided Moderator name isn't a Saikou Staff Member." });
 });
 
 /* 
@@ -81,6 +120,8 @@ HEADERS: X-API-KEY
 
 export const addTimeBan = router.post('/timebans/create-new', async (request, response) => {
 	const { RobloxUsername, RobloxID, Moderator, Reason, Duration } = request.body;
+	let validMod = false;
+	let moderatorID;
 
 	if (!RobloxUsername || !RobloxID || !Moderator || !Reason || !Duration) {
 		return response.status(400).json({ errorCode: 6, message: 'Some required fields were missing.' });
@@ -90,25 +131,61 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 		return response.status(400).json({ errorCode: 7, message: 'Inputted values lacked the correct data type (string, number).' });
 	}
 
-	if (await TimeBan.findOne({ RobloxID })) {
-		return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
-	}
-
-	try {
-		const player = new TimeBan({
-			RobloxUsername,
-			RobloxID,
-			Moderator,
-			Reason,
-			Date: Date.now(),
-			Duration: Duration * 1000,
+	/* Checking if they are a Saikou Mod+ */
+	await axios({
+		method: 'post',
+		url: 'https://users.roblox.com/v1/usernames/users',
+		data: {
+			usernames: [Moderator],
+		},
+	})
+		.then((robloxResponse) => {
+			moderatorID = robloxResponse.data.data.map((value: any) => value.id);
+			if (robloxResponse.data.data.length === 0) moderatorID = undefined;
+		})
+		.catch((error) => {
+			console.error(error);
 		});
 
-		await player.save();
-		response.status(200).json({ status: 'ok', message: 'New timeban added!' });
-	} catch (err: any) {
-		return response.status(500).json({ error: err.toString() });
+	if (moderatorID) {
+		await axios({
+			method: 'get',
+			url: `https://groups.roblox.com/v2/users/${moderatorID}/groups/roles`,
+		})
+			.then((robloxResponse) => {
+				robloxResponse.data.data.forEach((userGroup: any) => {
+					if (userGroup.group.name === 'Saikou' && userGroup.role.rank >= 40) {
+						validMod = true;
+					}
+				});
+			})
+			.catch((error) => {
+				console.error(error);
+			});
 	}
+
+	if (!moderatorID || validMod !== false) {
+		if (await TimeBan.findOne({ RobloxID })) {
+			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
+		}
+
+		try {
+			const player = new TimeBan({
+				RobloxUsername,
+				RobloxID,
+				Moderator,
+				Reason,
+				Date: Date.now(),
+				Duration: Duration * 1000,
+			});
+
+			await player.save();
+			return response.status(200).json({ status: 'ok', message: 'New timeban added!' });
+		} catch (err: any) {
+			return response.status(500).json({ error: err.toString() });
+		}
+	}
+	return response.status(403).json({ errorCode: 13, message: "The provided Moderator name isn't a Saikou Staff Member." });
 });
 
 /* 
