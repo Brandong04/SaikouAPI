@@ -6,6 +6,7 @@ export interface BanTypes extends Document {
 	RobloxID: number;
 	Moderator: string;
 	Reason: string;
+	Place: string;
 }
 
 // --- Timeban Schema ---
@@ -16,6 +17,7 @@ export interface TimebanTypes extends Document {
 	Reason: string;
 	Duration: number;
 	Date?: Date;
+	Place: string;
 }
 
 // --- Error Interface ---

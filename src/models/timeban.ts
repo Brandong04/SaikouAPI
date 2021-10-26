@@ -8,6 +8,7 @@ const timebanSchema: Schema = new Schema({
 	Reason: { type: String },
 	Date: { type: Date, default: Date.now },
 	Duration: { type: Number },
+	Place: { type: String },
 });
 
 export = model<TimebanTypes>('RobloxTimebans', timebanSchema);

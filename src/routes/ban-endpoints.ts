@@ -44,15 +44,15 @@ HEADERS: X-API-KEY
 */
 
 export const addPermBan = router.post('/bans/create-new', async (request, response) => {
-	const { RobloxUsername, RobloxID, Moderator, Reason } = request.body;
+	const { RobloxUsername, RobloxID, Moderator, Reason, Place } = request.body;
 	let validMod = false;
 	let moderatorID;
 
-	if (!RobloxUsername || !RobloxID || !Moderator || !Reason) {
+	if (!RobloxUsername || !RobloxID || !Moderator || !Reason || !Place) {
 		return response.status(400).json({ errorCode: 6, message: 'Some required fields were missing.' });
 	}
 
-	if (typeof RobloxUsername !== 'string' || typeof RobloxID !== 'number' || typeof Moderator !== 'string' || typeof Reason !== 'string') {
+	if (typeof RobloxUsername !== 'string' || typeof RobloxID !== 'number' || typeof Moderator !== 'string' || typeof Reason !== 'string' || typeof Place !== 'string') {
 		return response.status(400).json({ errorCode: 7, message: 'Inputted values lacked the correct data type (string, number).' });
 	}
 
@@ -89,7 +89,7 @@ export const addPermBan = router.post('/bans/create-new', async (request, respon
 			});
 	}
 
-	if (!moderatorID || validMod !== false) {
+	if (validMod !== false) {
 		if (await PermBan.findOne({ RobloxID })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}
@@ -101,6 +101,7 @@ export const addPermBan = router.post('/bans/create-new', async (request, respon
 				Moderator,
 				Reason,
 				Date: Date.now(),
+				Place,
 			});
 
 			await player.save();
@@ -119,7 +120,7 @@ HEADERS: X-API-KEY
 */
 
 export const addTimeBan = router.post('/timebans/create-new', async (request, response) => {
-	const { RobloxUsername, RobloxID, Moderator, Reason, Duration } = request.body;
+	const { RobloxUsername, RobloxID, Moderator, Reason, Duration, Place } = request.body;
 	let validMod = false;
 	let moderatorID;
 
@@ -127,7 +128,7 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 		return response.status(400).json({ errorCode: 6, message: 'Some required fields were missing.' });
 	}
 
-	if (typeof RobloxUsername !== 'string' || typeof RobloxID !== 'number' || typeof Moderator !== 'string' || typeof Reason !== 'string' || typeof Duration !== 'number') {
+	if (typeof RobloxUsername !== 'string' || typeof RobloxID !== 'number' || typeof Moderator !== 'string' || typeof Reason !== 'string' || typeof Duration !== 'number' || typeof Place !== 'string') {
 		return response.status(400).json({ errorCode: 7, message: 'Inputted values lacked the correct data type (string, number).' });
 	}
 
@@ -164,7 +165,7 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 			});
 	}
 
-	if (!moderatorID || validMod !== false) {
+	if (validMod !== false) {
 		if (await TimeBan.findOne({ RobloxID })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}
@@ -176,7 +177,8 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 				Moderator,
 				Reason,
 				Date: Date.now(),
-				Duration: Duration * 1000,
+				Duration,
+				Place,
 			});
 
 			await player.save();
@@ -247,7 +249,7 @@ export const listPermBans = router.get('/bans/list-bans', async (request, respon
 	if (sortOrder && limit) {
 		try {
 			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
-			return response.json(await PermBan.find({}, '-__v -_id').sort({ RobloxID: sortOrder }).limit(Number(limit)));
+			return response.json(await PermBan.find({}, '-__v -_id').sort({ Date: sortOrder }).limit(Number(limit)));
 		} catch (err: any) {
 			if (err.message.includes('Invalid sort value')) {
 				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
@@ -271,6 +273,56 @@ export const listPermBans = router.get('/bans/list-bans', async (request, respon
 		try {
 			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
 			response.json(await PermBan.find({}, '-__v -_id').limit(Number(limit)));
+		} catch (err) {
+			return response.status(500).json({ message: err });
+		}
+	}
+});
+
+/* 
+TITLE: Endpoint For Listing Perm Bans
+URL: http://localhost/v1/bans/list-bans
+HEADERS: X-API-KEY
+*/
+
+export const listTimeBans = router.get('/bans/list-timebans', async (request, response) => {
+	const { sortOrder, limit } = request.query;
+
+	if (!Object.keys(request.query).length || (!sortOrder && !limit)) {
+		try {
+			return response.json(await TimeBan.find({}, '-__v -_id'));
+		} catch (err) {
+			return response.json({ message: err });
+		}
+	}
+
+	if (sortOrder && limit) {
+		try {
+			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
+			return response.json(await TimeBan.find({}, '-__v -_id').sort({ Date: sortOrder }).limit(Number(limit)));
+		} catch (err: any) {
+			if (err.message.includes('Invalid sort value')) {
+				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
+			}
+			return response.status(500).json({ message: err });
+		}
+	}
+
+	if (sortOrder) {
+		try {
+			response.json(await TimeBan.find({}, '-__v -_id').sort({ RobloxID: sortOrder }));
+		} catch (err: any) {
+			if (err.message.includes('Invalid sort value')) {
+				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
+			}
+			return response.status(500).json({ message: err });
+		}
+	}
+
+	if (limit) {
+		try {
+			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
+			response.json(await TimeBan.find({}, '-__v -_id').limit(Number(limit)));
 		} catch (err) {
 			return response.status(500).json({ message: err });
 		}

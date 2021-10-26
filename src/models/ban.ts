@@ -7,6 +7,7 @@ const banSchema: Schema = new Schema({
 	Moderator: { type: String },
 	Reason: { type: String },
 	Date: { type: Date, default: Date.now },
+	Place: { type: String },
 });
 
 export = model<BanTypes>('RobloxBans', banSchema);
