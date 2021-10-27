@@ -1,8 +1,7 @@
 import express, { Router } from 'express';
 import axios from 'axios';
 
-import PermBan from '../models/ban';
-import TimeBan from '../models/timeban';
+import Ban from '../models/ban';
 
 const router: Router = express.Router();
 
@@ -20,14 +19,14 @@ export const checkBan = router.get('/users/:userid/banned', async (request, resp
 	}
 
 	/* Checking if they have a permanent ban */
-	const permbanPlayer = await PermBan.findOne({ RobloxID: Number(userid) }, '-__v -_id');
+	const permbanPlayer = await Ban.findOne({ RobloxID: Number(userid), type: 'permban' }, '-__v -_id');
 
 	if (permbanPlayer) {
 		return response.json({ banned: true, type: 'permban', player: permbanPlayer });
 	}
 
 	/* Checking if they have a temporary ban */
-	const timebanPlayer = await TimeBan.findOne({ RobloxID: Number(userid) }, '-__v -_id');
+	const timebanPlayer = await Ban.findOne({ RobloxID: Number(userid), type: 'timeban' }, '-__v -_id');
 
 	if (timebanPlayer) {
 		return response.json({ banned: true, type: 'timeban', player: timebanPlayer });
@@ -90,18 +89,19 @@ export const addPermBan = router.post('/bans/create-new', async (request, respon
 	}
 
 	if (validMod !== false) {
-		if (await PermBan.findOne({ RobloxID })) {
+		if (await Ban.findOne({ RobloxID, type: 'permban' })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}
 
 		try {
-			const player = new PermBan({
+			const player = new Ban({
 				RobloxUsername,
 				RobloxID,
 				Moderator,
 				Reason,
 				Date: Date.now(),
 				Place,
+				type: 'permban',
 			});
 
 			await player.save();
@@ -166,12 +166,12 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 	}
 
 	if (validMod !== false) {
-		if (await TimeBan.findOne({ RobloxID })) {
+		if (await Ban.findOne({ RobloxID, type: 'timeban' })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}
 
 		try {
-			const player = new TimeBan({
+			const player = new Ban({
 				RobloxUsername,
 				RobloxID,
 				Moderator,
@@ -179,6 +179,7 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 				Date: Date.now(),
 				Duration,
 				Place,
+				type: 'timeban',
 			});
 
 			await player.save();
@@ -205,19 +206,19 @@ export const deleteBan = router.delete('/bans/delete/:RobloxID', async (request,
 		}
 
 		/* Checking if there is a perm ban, if there is, delete it */
-		const permbanPlayer = await PermBan.findOne({ RobloxID: Number(RobloxID) });
+		const permbanPlayer = await Ban.findOne({ RobloxID: Number(RobloxID), type: 'permban' });
 
 		if (permbanPlayer) {
-			return await PermBan.deleteOne({ RobloxID: Number(RobloxID) }).then(() => {
+			return await Ban.deleteOne({ RobloxID: Number(RobloxID), type: 'permban' }).then(() => {
 				response.json({ status: 'ok', message: 'Player unbanned!' });
 			});
 		}
 
 		/* Checking if there is a time ban, if there is, delete it */
-		const timebanPlayer = await TimeBan.findOne({ RobloxID: Number(RobloxID) });
+		const timebanPlayer = await Ban.findOne({ RobloxID: Number(RobloxID), type: 'timeban' });
 
 		if (timebanPlayer) {
-			return await TimeBan.deleteOne({ RobloxID: Number(RobloxID) }).then(() => {
+			return await Ban.deleteOne({ RobloxID: Number(RobloxID), type: 'timeban' }).then(() => {
 				response.json({ status: 'ok', message: 'Player unbanned!' });
 			});
 		}
@@ -230,17 +231,17 @@ export const deleteBan = router.delete('/bans/delete/:RobloxID', async (request,
 });
 
 /* 
-TITLE: Endpoint For Listing Perm Bans
+TITLE: Endpoint For Listing All Bans
 URL: http://localhost/v1/bans/list-bans
 HEADERS: X-API-KEY
 */
 
-export const listPermBans = router.get('/bans/list-bans', async (request, response) => {
+export const listAllBans = router.get('/bans/list-bans', async (request, response) => {
 	const { sortOrder, limit } = request.query;
 
 	if (!Object.keys(request.query).length || (!sortOrder && !limit)) {
 		try {
-			return response.json(await PermBan.find({}, '-__v -_id'));
+			return response.json(await Ban.find({}, '-__v -_id'));
 		} catch (err) {
 			return response.json({ message: err });
 		}
@@ -249,7 +250,7 @@ export const listPermBans = router.get('/bans/list-bans', async (request, respon
 	if (sortOrder && limit) {
 		try {
 			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
-			return response.json(await PermBan.find({}, '-__v -_id').sort({ Date: sortOrder }).limit(Number(limit)));
+			return response.json(await Ban.find({}, '-__v -_id').sort({ Date: sortOrder }).limit(Number(limit)));
 		} catch (err: any) {
 			if (err.message.includes('Invalid sort value')) {
 				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
@@ -260,7 +261,7 @@ export const listPermBans = router.get('/bans/list-bans', async (request, respon
 
 	if (sortOrder) {
 		try {
-			response.json(await PermBan.find({}, '-__v -_id').sort({ RobloxID: sortOrder }));
+			response.json(await Ban.find({}, '-__v -_id').sort({ Date: sortOrder }));
 		} catch (err: any) {
 			if (err.message.includes('Invalid sort value')) {
 				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
@@ -272,57 +273,7 @@ export const listPermBans = router.get('/bans/list-bans', async (request, respon
 	if (limit) {
 		try {
 			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
-			response.json(await PermBan.find({}, '-__v -_id').limit(Number(limit)));
-		} catch (err) {
-			return response.status(500).json({ message: err });
-		}
-	}
-});
-
-/* 
-TITLE: Endpoint For Listing Perm Bans
-URL: http://localhost/v1/bans/list-bans
-HEADERS: X-API-KEY
-*/
-
-export const listTimeBans = router.get('/bans/list-timebans', async (request, response) => {
-	const { sortOrder, limit } = request.query;
-
-	if (!Object.keys(request.query).length || (!sortOrder && !limit)) {
-		try {
-			return response.json(await TimeBan.find({}, '-__v -_id'));
-		} catch (err) {
-			return response.json({ message: err });
-		}
-	}
-
-	if (sortOrder && limit) {
-		try {
-			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
-			return response.json(await TimeBan.find({}, '-__v -_id').sort({ Date: sortOrder }).limit(Number(limit)));
-		} catch (err: any) {
-			if (err.message.includes('Invalid sort value')) {
-				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
-			}
-			return response.status(500).json({ message: err });
-		}
-	}
-
-	if (sortOrder) {
-		try {
-			response.json(await TimeBan.find({}, '-__v -_id').sort({ RobloxID: sortOrder }));
-		} catch (err: any) {
-			if (err.message.includes('Invalid sort value')) {
-				return response.status(400).json({ errorCode: 3, message: 'SortOrder allowed values: Asc, Desc' });
-			}
-			return response.status(500).json({ message: err });
-		}
-	}
-
-	if (limit) {
-		try {
-			if (Number.isNaN(Number(limit))) return response.status(400).json({ errorCode: 4, message: 'Limit parameter must be an integer.' });
-			response.json(await TimeBan.find({}, '-__v -_id').limit(Number(limit)));
+			response.json(await Ban.find({}, '-__v -_id').limit(Number(limit)));
 		} catch (err) {
 			return response.status(500).json({ message: err });
 		}

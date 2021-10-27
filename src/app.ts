@@ -8,7 +8,7 @@ import { connect } from 'mongoose';
 
 import { methodCheck, tokenAuth, expiredTimeban } from './util/functions';
 import { JSONError } from './types/interfaces';
-import { checkBan, addPermBan, addTimeBan, deleteBan, listPermBans, listTimeBans } from './routes/ban-endpoints';
+import { checkBan, addPermBan, addTimeBan, deleteBan, listAllBans } from './routes/ban-endpoints';
 
 config();
 const app: express.Application = express();
@@ -46,8 +46,7 @@ app.use((err: JSONError, _request: express.Request, response: express.Response, 
 app.use('/v1', checkBan).all('/v1/users/:userid/banned', (request, response) => methodCheck(request, response, 'GET'));
 app.use('/v1', addPermBan).all('/v1/bans/create-new', (request, response) => methodCheck(request, response, 'POST'));
 app.use('/v1', deleteBan).all('/v1/bans/delete/:RobloxID', (request, response) => methodCheck(request, response, 'DELETE'));
-app.use('/v1', listPermBans).all('/v1/bans/list-bans', (request, response) => methodCheck(request, response, 'GET'));
-app.use('/v1', listTimeBans).all('/v1/bans/list-timebans', (request, response) => methodCheck(request, response, 'GET'));
+app.use('/v1', listAllBans).all('/v1/bans/list-bans', (request, response) => methodCheck(request, response, 'GET'));
 app.use('/v1', addTimeBan).all('/v1/timebans/create-new', (request, response) => methodCheck(request, response, 'POST'));
 
 /* HANDLING ENDPOINTS THAT DON'T EXIST */
