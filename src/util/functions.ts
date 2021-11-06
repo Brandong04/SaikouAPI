@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import timebanData from '../models/timeban';
+import timebanData from '../models/ban';
 
 /* API AUTHENTICATION MIDDLEWARE */
 export function tokenAuth(request: Request, response: Response, next: any) {
@@ -18,10 +18,10 @@ export function methodCheck(request: Request, response: Response, validMethod: s
 
 /* EXPIRED TIMEBAN CHECK */
 export async function expiredTimeban() {
-	const bannedPlayers = await timebanData.find({});
+	const bannedPlayers = await timebanData.find({ type: 'timeban' });
 
 	bannedPlayers.forEach(async (player) => {
-		if (player.Date!.getTime() + player.Duration < Date.now()) {
+		if (player.Date!.getTime() + player.Duration! < Date.now()) {
 			await timebanData.deleteOne({ RobloxID: player.RobloxID });
 		}
 	});
