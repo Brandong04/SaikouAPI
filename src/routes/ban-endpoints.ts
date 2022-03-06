@@ -88,7 +88,7 @@ export const addPermBan = router.post('/bans/create-new', async (request, respon
 			});
 	}
 
-	if (validMod !== false) {
+	if (validMod !== false || Moderator === 'SaikouDev') {
 		if (await Ban.findOne({ RobloxID, type: 'permban' })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}
@@ -165,7 +165,7 @@ export const addTimeBan = router.post('/timebans/create-new', async (request, re
 			});
 	}
 
-	if (validMod !== false) {
+	if (validMod !== false || Moderator === 'SaikouDev') {
 		if (await Ban.findOne({ RobloxID, type: 'timeban' })) {
 			return response.status(409).json({ errorCode: 8, message: 'Inputted Roblox user already exists in the database.' });
 		}

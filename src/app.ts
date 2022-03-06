@@ -5,6 +5,12 @@ import rateLimit from 'express-rate-limit';
 import { config } from 'dotenv';
 import { green } from 'chalk';
 import { connect } from 'mongoose';
+import { writeFileSync } from 'fs';
+import moment from 'moment';
+import cron from 'node-cron';
+import removeFiles from 'find-remove';
+
+import robloxBans from './models/ban';
 
 import { methodCheck, tokenAuth, expiredTimeban } from './util/functions';
 import { JSONError } from './types/interfaces';
@@ -26,7 +32,7 @@ const apiLimiter = rateLimit({
 	// @ts-ignore
 	message: { errorCode: 11, message: 'Too many requests, please try again later.' },
 });
-app.use(apiLimiter);
+// app.use(apiLimiter);
 
 /* USING AUTH MIDDLEWARE */
 app.use(tokenAuth);
@@ -57,14 +63,15 @@ app.all('*', (request: express.Request, response: express.Response) => {
 app.listen(80, async (): Promise<void> => {
 	try {
 		/* Connecting to Mongo Database */
-		await connect(String(process.env.MONGO_PASSWORD), {
+		const databaseOptions = {
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
-			useFindAndModify: true,
 			keepAlive: true,
-		}).then((): void => console.log(green('[mongo_database]: MongoDB connected!')));
+		};
 
+		await connect(`${process.env.MONGO_PASSWORD}`, databaseOptions).then((): void => console.log(green(`[mongo_database]: Connected to MongoDB successfully.`)));
 		console.log(green('[api_server]: 🚀 Listening on port 80!'));
+
 	} catch (err) {
 		console.error(err);
 	}
@@ -72,3 +79,12 @@ app.listen(80, async (): Promise<void> => {
 
 /* Checking if timebans expired every 10 seconds */
 setInterval(expiredTimeban, 10000);
+
+cron.schedule('0 0 * * *', async () => {
+	removeFiles('./dataBackups', {
+		age: { seconds: 604800 },
+		extensions: '.json',
+	});
+	
+	writeFileSync(`./dataBackups/${moment(new Date()).format('DD-MM-YYYY[@]h-mma')}.json`, JSON.stringify(await robloxBans.find({}, '-_id -__v'), null, 2));
+})
